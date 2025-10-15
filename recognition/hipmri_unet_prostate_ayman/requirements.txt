@@ -1,0 +1,9 @@
+torch>=2.2
+torchvision>=0.17
+torchaudio
+numpy>=1.26
+nibabel>=5.2
+scikit-image>=0.23
+tqdm>=4.66
+matplotlib>=3.8
+einops>=0.7

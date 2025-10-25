@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base", type=int, default=32, help="Base channel width for the U-Net.")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate.")
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+    parser.add_argument("--label", type=int, default=5, help="Foreground label id (e.g., prostate=5).")
     return parser.parse_args()
 
 
@@ -65,9 +66,27 @@ def build_dataloaders(args: argparse.Namespace, pin_memory: bool) -> Tuple[DataL
     Raises:
         ValueError: If any dataset split is empty.
     """
-    train_ds = HipMRI2DDataset(args.train_root, size=args.size, aug_flip=True, aug_rotate=True)
-    val_ds = HipMRI2DDataset(args.val_root, size=args.size, aug_flip=False, aug_rotate=False)
-    test_ds = HipMRI2DDataset(args.test_root, size=args.size, aug_flip=False, aug_rotate=False)
+    train_ds = HipMRI2DDataset(
+        args.train_root,
+        size=args.size,
+        aug_flip=True,
+        aug_rotate=True,
+        fg_label=args.label,
+    )
+    val_ds = HipMRI2DDataset(
+        args.val_root,
+        size=args.size,
+        aug_flip=False,
+        aug_rotate=False,
+        fg_label=args.label,
+    )
+    test_ds = HipMRI2DDataset(
+        args.test_root,
+        size=args.size,
+        aug_flip=False,
+        aug_rotate=False,
+        fg_label=args.label,
+    )
 
     if len(train_ds) == 0:
         raise ValueError("Training dataset is empty.")

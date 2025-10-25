@@ -181,6 +181,7 @@ class HipMRI2DDataset(Dataset[Tuple[torch.Tensor, torch.Tensor, str]]):
         size: int = 256,
         aug_flip: bool = True,
         aug_rotate: bool = True,
+        fg_label: int | None = 5,
     ) -> None:
         """Initialise the dataset.
 
@@ -189,12 +190,15 @@ class HipMRI2DDataset(Dataset[Tuple[torch.Tensor, torch.Tensor, str]]):
             size: Output spatial size (height and width) after resizing.
             aug_flip: Whether to enable random horizontal and vertical flips.
             aug_rotate: Whether to enable random small-angle rotations.
+            fg_label: Foreground label value to extract. If ``None``, any non-zero
+                voxel is treated as foreground; otherwise equality to ``fg_label``.
         """
         super().__init__()
         self.root = Path(root)
         self.size = size
         self.aug_flip = aug_flip
         self.aug_rotate = aug_rotate
+        self.fg_label = fg_label
 
         img_dir = self.root / "img"
         seg_dir = self.root / "seg"
@@ -228,7 +232,10 @@ class HipMRI2DDataset(Dataset[Tuple[torch.Tensor, torch.Tensor, str]]):
                 f"{image.shape} vs {mask.shape}"
             )
 
-        mask = (mask > 0).astype(np.float32)
+        if self.fg_label is None:
+            mask = (mask > 0).astype(np.float32)
+        else:
+            mask = (mask == float(self.fg_label)).astype(np.float32)
 
         if self.aug_flip:
             image, mask = _random_flip(image, mask)

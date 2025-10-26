@@ -10,6 +10,13 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+try:
+    from scipy import ndimage as ndi
+
+    _HAVE_SCIPY = True
+except Exception:  # pragma: no cover - optional dependency
+    _HAVE_SCIPY = False
+from skimage.measure import label as sk_label
 
 
 def set_global_seed(seed: int) -> None:
@@ -134,9 +141,45 @@ def save_curves(log: Dict[str, List[float]], outdir: str) -> None:
         plt.close()
 
 
+def largest_component(mask: np.ndarray) -> np.ndarray:
+    """Keep only largest 8-connected component of a 2D binary mask."""
+    if mask.ndim != 2:
+        raise ValueError(f"largest_component expects 2D, got {mask.shape}")
+    mask_bin = (mask > 0.5).astype(np.uint8)
+    if mask_bin.sum() == 0:
+        return np.zeros_like(mask_bin, dtype=np.float32)
+    if _HAVE_SCIPY:
+        labeled, n = ndi.label(mask_bin, structure=np.ones((3, 3), dtype=np.uint8))
+    else:
+        labeled = sk_label(mask_bin, connectivity=2)
+        n = int(labeled.max())
+    if n <= 1:
+        return mask_bin.astype(np.float32)
+    vals, counts = np.unique(labeled, return_counts=True)
+    mask_vals = vals != 0
+    vals = vals[mask_vals]
+    counts = counts[mask_vals]
+    keep = vals[np.argmax(counts)]
+    out = (labeled == keep).astype(np.float32)
+    return out
+
+
+def apply_lcc_from_logits(logits: torch.Tensor, threshold: float = 0.5) -> np.ndarray:
+    """Sigmoid->threshold->LCC per sample. logits: (N,1,H,W). Returns np masks (N,H,W) in {0,1}."""
+    if logits.ndim != 4 or logits.size(1) != 1:
+        raise ValueError(f"Expected logits (N,1,H,W), got {tuple(logits.shape)}")
+    probs = torch.sigmoid(logits).detach().cpu().numpy()
+    masks = (probs >= threshold).astype(np.float32)
+    masks = masks[:, 0]
+    out = [largest_component(mask) for mask in masks]
+    return np.stack(out, axis=0)
+
+
 __all__ = [
     "set_global_seed",
     "soft_dice_loss",
     "dice_metric",
     "save_curves",
+    "largest_component",
+    "apply_lcc_from_logits",
 ]

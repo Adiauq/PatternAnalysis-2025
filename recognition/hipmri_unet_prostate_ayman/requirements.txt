@@ -7,3 +7,4 @@ scikit-image>=0.23
 tqdm>=4.66
 matplotlib>=3.8
 einops>=0.7
+scipy>=1.11

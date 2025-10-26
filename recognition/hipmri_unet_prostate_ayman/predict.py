@@ -13,6 +13,7 @@ import torch
 from skimage import transform
 
 from recognition.hipmri_unet_prostate_ayman.modules import ImprovedUNet2D
+from recognition.hipmri_unet_prostate_ayman.utils import largest_component
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +24,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out", type=str, default="outputs/preds", help="Directory to store PNGs.")
     parser.add_argument("--size", type=int, default=256, help="Spatial size for resizing.")
     parser.add_argument("--base", type=int, default=32, help="Base channel width of the model.")
+    parser.add_argument(
+        "--thresh",
+        type=float,
+        default=None,
+        help="Binarization threshold. If None, use checkpoint best_thresh or 0.5.",
+    )
+    parser.add_argument(
+        "--tta",
+        action="store_true",
+        help="Enable light TTA (hflip).",
+    )
     return parser.parse_args()
 
 
@@ -79,14 +91,35 @@ def _load_and_preprocess(path: Path, size: int) -> Tuple[np.ndarray, np.ndarray,
     return resized, tensor, stem
 
 
-def _predict_mask(model: torch.nn.Module, tensor: torch.Tensor, device: torch.device) -> np.ndarray:
-    """Run inference and return binary mask."""
+def _predict_mask(
+    model: torch.nn.Module,
+    tensor: torch.Tensor,
+    device: torch.device,
+    thresh: float,
+    tta: bool = False,
+) -> np.ndarray:
+    """Run inference with optional TTA and return refined binary mask."""
     model.eval()
     with torch.no_grad():
-        logits = model(tensor.to(device=device))
-        probs = torch.sigmoid(logits)
-        mask = (probs >= 0.5).float()
-    return mask.squeeze().cpu().numpy()
+        tensor = tensor.to(device=device)
+
+        logits0 = model(tensor)
+        probs0 = torch.sigmoid(logits0)
+
+        if tta:
+            tensor_flip = torch.flip(tensor, dims=[-1])
+            logits1 = model(tensor_flip)
+            probs1 = torch.sigmoid(logits1)
+            probs1 = torch.flip(probs1, dims=[-1])
+            probs = 0.5 * (probs0 + probs1)
+        else:
+            probs = probs0
+
+        mask = (probs >= thresh).float()
+
+    mask_np = mask.squeeze().cpu().numpy()
+    refined = largest_component(mask_np)
+    return refined
 
 
 def _plot_prediction(image: np.ndarray, mask: np.ndarray, out_path: Path) -> None:
@@ -122,6 +155,8 @@ def main() -> None:
     model = ImprovedUNet2D(in_channels=1, n_classes=1, base_channels=args.base)
     checkpoint = torch.load(checkpoint_path, map_location=device)
     model.load_state_dict(checkpoint["model_state"])
+    best_thresh = checkpoint.get("best_thresh", 0.5)
+    thresh = args.thresh if args.thresh is not None else float(best_thresh)
     model.to(device=device)
 
     output_dir = Path(args.out)
@@ -134,7 +169,7 @@ def main() -> None:
 
         image, tensor, stem = _load_and_preprocess(input_path, args.size)
         tensor = tensor.to(device=device)
-        mask = _predict_mask(model, tensor, device)
+        mask = _predict_mask(model, tensor, device, thresh, tta=args.tta)
 
         out_path = output_dir / f"{stem}_pred.png"
         _plot_prediction(image, mask, out_path)

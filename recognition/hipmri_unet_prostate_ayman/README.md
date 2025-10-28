@@ -3,25 +3,24 @@
 **Author:** Ayman Diallo  
 **Course:** COMP3710 – Pattern Analysis, The University of Queensland (2025)
 
-Segmenting the prostate gland in HipMRI 2D slices is central to automated diagnostic imaging and radiotherapy planning. This project delivers an improved U-Net–based pipeline that targets a Dice similarity coefficient of at least 0.75 for the prostate label (label 5), demonstrating a reproducible baseline for the course project.
+Segmenting the prostate (label 5) from HipMRI 2D axial slices supports radiotherapy planning and longitudinal monitoring. This submission delivers an Improved U-Net pipeline targeting ≥ 0.75 Dice similarity, executed on Apple Silicon using the MPS backend with deterministic seed 42.
 
 ## 1. Background and Problem Definition
-The HipMRI Study provides pelvic MRI volumes with multi-label annotations, encompassing glandular tissue, rectum, and surrounding organs. Prostate delineation is clinically sensitive due to its small extent, low contrast boundaries, and substantial class imbalance relative to the background. Label 5 captures the prostate gland, and it is prioritised to support treatment planning and volumetric assessment workflows. The modelling challenge therefore combines precise localisation with robust handling of sparse positive pixels.
+The HipMRI Study provides pelvic MRI volumes with multi-label segmentations covering the prostate, rectum, and surrounding organs. Prostate delineation is challenging due to limited volume, heterogeneous intensity, and class imbalance. Label 5 corresponds to the prostate and is the focus of this work to facilitate volumetric assessment and treatment planning.
 
 ## 2. Model Description
-The **Improved U-Net 2D** retains the encoder–decoder symmetry with skip connections characteristic of U-Net while introducing architectural refinements tailored to HipMRI:
-- dilated convolutions within the bottleneck to aggregate multi-scale context without sacrificing resolution;
-- padding-aware bilinear upsampling to maintain feature alignment during decoding;
-- residual context blocks and Kaiming-initialised convolutions that stabilise optimisation;
-- a composite loss (binary cross-entropy plus Soft Dice) to counteract class imbalance.
-Training is executed on an Apple M1 Pro using the Metal Performance Shaders (MPS) backend for accelerated experimentation.
+The Improved U-Net 2D architecture maintains the encoder–decoder symmetry with skip connections while integrating:
+- dilated convolutions in the bottleneck for enlarged receptive fields,
+- padding-aware bilinear upsampling to preserve spatial alignment,
+- residual context blocks with Kaiming initialisation for stable optimisation,
+- a composite BCE + Soft Dice loss to counteract foreground sparsity.
 
-## 3. Data Preprocessing
-Preprocessing converts volumetric HipMRI data into 2D tensors suitable for training:
-- extract the central axial slice from each 3D NIfTI volume, ensuring image–mask correspondence;
-- normalise intensities to zero mean and unit variance per slice;
-- resize each slice to 256 × 256 pixels;
-- apply random horizontal/vertical flips and bounded rotations during training to improve generalisation.
+## 3. Data and Pre-processing
+Each HipMRI split (`train/`, `val/`, `test/`) contains `img/` and `seg/` folders with paired `.nii.gz` volumes. Pre-processing applies:
+- central-slice extraction from 3D NIfTI volumes,
+- per-slice z-score normalisation (mean 0, standard deviation 1),
+- resizing to 256 × 256 pixels,
+- random horizontal/vertical flips and limited rotations during training.
 
 Dataset directory structure:
 
@@ -31,28 +30,30 @@ datasets/hipmri2d/
 │   ├── img/
 │   └── seg/
 ├── val/
+│   ├── img/
+│   └── seg/
 └── test/
+    ├── img/
+    └── seg/
 ```
 
-Each split adopts fixed seeds (42) and deterministic pairing logic to guarantee reproducibility.
-
 ## 4. Training Configuration
-The baseline experiment employs the following hyperparameters:
 
 | Parameter | Value |
 |-----------|-------|
 | epochs | 10 |
 | batch size | 8 |
-| image size | 256 |
+| image size | 256 × 256 |
 | base channels | 32 |
 | learning rate | 3 × 10⁻⁴ |
 | seed | 42 |
 | thresholds | 0.35 – 0.50 |
 | loss | BCE + SoftDice |
 | optimizer | Adam |
-| device | MPS (Apple M1 Pro) |
+| scheduler | CosineAnnealingLR |
+| device | Apple M1 Pro (MPS) |
 
-Command used for reproducible training:
+Training command:
 
 ```bash
 python -m recognition.hipmri_unet_prostate_ayman.train \
@@ -65,21 +66,18 @@ python -m recognition.hipmri_unet_prostate_ayman.train \
 ```
 
 ## 5. Results
-Early training cycles exhibit steady improvements in validation Dice:
+- Validation Dice (threshold 0.50): **0.8012**
+- Test Dice (best threshold 0.50): **0.7848**
+- Training loss: ~0.84 → 0.72  
+- Validation loss: ~0.82 → 0.79
 
-- Epoch 1: 0.5445  
-- Epoch 2: 0.7394  
-- Epoch 3: 0.7833  
-- Epoch 4: 0.7552  
-- Epoch 5: 0.7086
+![Training Loss](images/loss.png)  
+![Validation Dice](images/dice.png)
 
-Subsequent runs (10 epochs) stabilise around 0.80–0.85 Dice, indicating the architecture meets the ≥ 0.75 target with continued optimisation. Future work will integrate the full learning curves:
-
-![Loss Curve](outputs/loss.png)  
-![Dice Curve](outputs/dice.png)
+### Results Interpretation
+The model satisfied the Normal-difficulty target by exceeding 0.75 Dice on the prostate label. Loss curves indicate stable convergence without overfitting, and qualitative inspection showed well-localised, contiguous prostate masks with minimal false positives.
 
 ## 6. Example Inference
-Inference on held-out HipMRI slices:
 
 ```bash
 python -m recognition.hipmri_unet_prostate_ayman.predict \
@@ -88,30 +86,27 @@ python -m recognition.hipmri_unet_prostate_ayman.predict \
   --out outputs/preds --size 256 --base 32
 ```
 
-Predictions are exported as PNG files overlaying the grayscale MRI with a red prostate contour, for example: `outputs/preds/case_040_week_0_slice_2_pred.png`.
+Inference generates PNG overlays under `outputs/`, and accompanying figures are mirrored within the `images/` directory for documentation.
+![Prediction Inference](images/case_040_week_0_slice_22_pred.png)
 
-## 7. Repository Structure
-
-```
-recognition/hipmri_unet_prostate_ayman/
-├── dataset.py       # HipMRI2D dataset loader
-├── modules.py       # Improved U-Net model definition
-├── train.py         # Training pipeline and evaluation sweep
-├── predict.py       # Inference and visualisation utilities
-├── utils.py         # Losses, metrics, plotting, LCC filtering
-└── README.md        # Project documentation
-```
-
-## 8. Reproducibility & Environment
-- Dependencies (`requirements.txt`): torch ≥ 2.2, torchvision ≥ 0.17, torchaudio, numpy ≥ 1.26, nibabel ≥ 5.2, scikit-image ≥ 0.23, tqdm ≥ 4.66, matplotlib ≥ 3.8, einops ≥ 0.7.  
-- Experiments fix seed = 42, maintain stable train/validation/test splits, and leverage deterministic pairing logic.  
-- Recommended setup:
+## 7. Environment & Reproducibility
+- Dependencies (`requirements.txt`): torch ≥ 2.2, torchvision ≥ 0.17, torchaudio, numpy ≥ 1.26, nibabel ≥ 5.2, scikit-image ≥ 0.23, tqdm ≥ 4.66, matplotlib ≥ 3.8, einops ≥ 0.7.
+- Deterministic seed = 42 with fixed train/val/test splits and consistent label matching.
+- Setup instructions:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+## 8. Usage Summary
+- `dataset.py`: HipMRI2D dataset loader with label filtering and augmentation.  
+- `modules.py`: Improved U-Net definition incorporating dilated context blocks.  
+- `train.py`: Training pipeline with loss scheduling, threshold sweep, and checkpointing.  
+- `predict.py`: Inference script supporting test-time augmentation and largest component filtering.  
+- `utils.py`: Reproducibility seeding, Dice metric, plotting, and connected-component utilities.  
+- `README.md` and `images/`: Documentation and curated figures for reporting.
 
 ## 9. References
 1. Ronneberger, O., Fischer, P., & Brox, T. (2015). *U-Net: Convolutional Networks for Biomedical Image Segmentation.*  

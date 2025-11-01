@@ -90,7 +90,7 @@ Inference generates PNG overlays under `outputs/`, and accompanying figures are 
 ![Prediction Inference](images/case_040_week_0_slice_22_pred.png)
 
 ## 7. Environment & Reproducibility
-- Dependencies (`requirements.txt`): torch ≥ 2.2, torchvision ≥ 0.17, torchaudio, numpy ≥ 1.26, nibabel ≥ 5.2, scikit-image ≥ 0.23, tqdm ≥ 4.66, matplotlib ≥ 3.8, einops ≥ 0.7.
+- Dependencies (`requirements.txt`): torch 2.9.0, torchvision 0.24.0, torchaudio 2.9.0, numpy 2.3.4, nibabel 5.3.2, scikit-image 0.25.2, tqdm 4.67.1, matplotlib 3.10.7, einops 0.8.1, scipy 1.16.3, pytest 7.4.4.
 - Deterministic seed = 42 with fixed train/val/test splits and consistent label matching.
 - Setup instructions:
 
@@ -100,12 +100,17 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Project scripts create and reuse a virtual environment at `recognition/hipmri_unet_prostate_ayman/.venv/` by default; override via the `VENV_DIR` environment variable if required.
+From the project directory, you can instead run `./scripts/setup_env_macos.zsh` to execute the same steps automatically on macOS.
+
 ## 8. Usage Summary
 - `dataset.py`: HipMRI2D dataset loader with label filtering and augmentation.  
 - `modules.py`: Improved U-Net definition incorporating dilated context blocks.  
 - `train.py`: Training pipeline with loss scheduling, threshold sweep, and checkpointing.  
 - `predict.py`: Inference script supporting test-time augmentation and largest component filtering.  
 - `utils.py`: Reproducibility seeding, Dice metric, plotting, and connected-component utilities.  
+- `scripts/`: Automation for environment setup (`setup_env_macos.zsh`), label-aware training (`train_label.zsh`, default `LABEL=5` → `outputs/hipmri_unet_label<LABEL>_mps`), inference (`predict_example.zsh`, reusing `LABEL` to locate checkpoints and write `preds/`), end-to-end runs (`run_all.zsh`), test execution (`run_tests.sh`).  
+- `tests/`: PyTest-based unit checks covering the forward pass and Dice metric.  
 - `README.md` and `images/`: Documentation and curated figures for reporting.
 
 ## 9. References

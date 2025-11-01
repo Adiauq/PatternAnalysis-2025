@@ -7,7 +7,7 @@ REPO_ROOT="$(cd -- "${PROJECT_ROOT}/.." >/dev/null 2>&1 && pwd)"
 cd "${REPO_ROOT}"
 
 PY="${PYTHON_BIN:-python3}"
-DEFAULT_VENV="${REPO_ROOT}/.venv"
+DEFAULT_VENV="${PROJECT_ROOT}/.venv"
 VENV_DIR="${VENV_DIR:-${DEFAULT_VENV}}"
 
 echo "[setup] creating venv at ${VENV_DIR}"

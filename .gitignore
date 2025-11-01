@@ -8,6 +8,7 @@ __pycache__/
 # Virtual environments
 .venv/
 venv/
+recognition/hipmri_unet_prostate_ayman/.venv/
 
 # OS files
 .DS_Store
@@ -28,6 +29,7 @@ recognition/hipmri_unet_prostate_ayman/checkpoints/
 # Generated figures
 recognition/hipmri_unet_prostate_ayman/outputs/**/*.png
 recognition/hipmri_unet_prostate_ayman/outputs/**/*.pdf
+outputs/
 *.pdf
 
 # Development notes

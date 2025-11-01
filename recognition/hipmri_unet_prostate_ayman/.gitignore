@@ -35,10 +35,6 @@ datasets/
 tmp/
 checkpoints/
 
-# Reports / artifacts
-*.png
-*.pdf
-
 # Logs and tables
 *.log
 *.csv

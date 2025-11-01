@@ -1,8 +1,10 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "${0}")/.." >/dev/null 2>&1 && pwd)"
-cd "${ROOT_DIR}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${0}")" >/dev/null 2>&1 && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
+REPO_ROOT="$(cd -- "${PROJECT_ROOT}/.." >/dev/null 2>&1 && pwd)"
+cd "${REPO_ROOT}"
 
 PS3=$'\nSelect an action: '
 select opt in "Setup env" "Train (label=5)" "Predict example" "Run all" "Quit"; do

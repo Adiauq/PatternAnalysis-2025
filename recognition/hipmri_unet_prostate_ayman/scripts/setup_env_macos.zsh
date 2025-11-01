@@ -1,11 +1,14 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "${0}")/.." >/dev/null 2>&1 && pwd)"
-cd "${ROOT_DIR}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${0}")" >/dev/null 2>&1 && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
+REPO_ROOT="$(cd -- "${PROJECT_ROOT}/.." >/dev/null 2>&1 && pwd)"
+cd "${REPO_ROOT}"
 
 PY="${PYTHON_BIN:-python3}"
-VENV_DIR="${VENV_DIR:-.venv}"
+DEFAULT_VENV="${REPO_ROOT}/.venv"
+VENV_DIR="${VENV_DIR:-${DEFAULT_VENV}}"
 
 echo "[setup] creating venv at ${VENV_DIR}"
 ${PY} -m venv "${VENV_DIR}"
@@ -17,7 +20,7 @@ echo "[setup] upgrading pip"
 pip install --upgrade pip
 
 echo "[setup] installing requirements"
-pip install -r recognition/hipmri_unet_prostate_ayman/requirements.txt
+pip install -r "${PROJECT_ROOT}/requirements.txt"
 
 python - <<'PY'
 import torch

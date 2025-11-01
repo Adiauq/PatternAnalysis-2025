@@ -1,50 +1,34 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.pyd
 *.egg-info/
-.venv/
-venv/
 .env
 
-# OS
+# Virtual environments
+.venv/
+venv/
+
+# OS files
 .DS_Store
 
-# Outputs / checkpoints
-outputs/
-runs/
+# Project artifacts
+recognition/hipmri_unet_prostate_ayman/outputs/
+recognition/hipmri_unet_prostate_ayman/tmp/
+recognition/hipmri_unet_prostate_ayman/checkpoints/
 *.pt
 *.pth
-*.ckpt
-*.onnx
-
-# Data (never commit)
-data/
-datasets/
+*.npy
 *.nii
 *.nii.gz
-*.mha
-*.npy
-
-# Notebooks and temp
-.ipynb_checkpoints/
-*.ipynb
-.tmp/
-.cache/
-tmp/
-checkpoints/
-
-# Reports / artifacts
-*.png
-*.pdf
-
-# Logs and tables
 *.log
 *.csv
-
-# Tools
-.mypy_cache/
-.pytest_cache/
-.vscode/
 .idea/
+
+# Generated figures
+recognition/hipmri_unet_prostate_ayman/outputs/**/*.png
+recognition/hipmri_unet_prostate_ayman/outputs/**/*.pdf
+*.pdf
+
+# Development notes
+recognition/hipmri_unet_prostate_ayman/PR_DRAFT.md

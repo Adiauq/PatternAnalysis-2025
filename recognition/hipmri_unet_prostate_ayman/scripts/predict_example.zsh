@@ -1,9 +1,13 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "${0}")/.." >/dev/null 2>&1 && pwd)"
-cd "${ROOT_DIR}"
-source .venv/bin/activate
+SCRIPT_DIR="$(cd -- "$(dirname -- "${0}")" >/dev/null 2>&1 && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
+REPO_ROOT="$(cd -- "${PROJECT_ROOT}/.." >/dev/null 2>&1 && pwd)"
+cd "${REPO_ROOT}"
+
+VENV_DIR="${VENV_DIR:-${REPO_ROOT}/.venv}"
+source "${VENV_DIR}/bin/activate"
 
 : ${CKPT:="outputs/hipmri_unet_label5_mps/best.pt"}
 : ${INPUT:="${HOME}/datasets/hipmri2d/test/img/case_040_week_0_slice_2.nii.gz"}

@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+
+# Outputs / checkpoints
+outputs/
+runs/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Data (never commit)
+data/
+datasets/
+*.nii
+*.nii.gz
+*.mha
+*.npy
+
+# Notebooks and temp
+.ipynb_checkpoints/
+*.ipynb
+.tmp/
+.cache/
+tmp/
+checkpoints/
+
+# Reports / artifacts
+*.png
+*.pdf
+
+# Logs and tables
+*.log
+*.csv
+
+# Tools
+.mypy_cache/
+.pytest_cache/
+.vscode/
+.idea/
